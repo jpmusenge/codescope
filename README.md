@@ -1,5 +1,5 @@
 # CodeScope
-> Side Project...
+> Note: This is an experimental side project. In Andrew Ng's words, this is a "highly autonomous, moderately capable, and very unreliable" agent.
 
 This is a project I started working on while learning about AI agents and agentic workflows. It started while reading Andrew Ng's article in The Batch newsletter about building simple agents using aisuite. CodeScope is an AI agent that analyzes codebases for
 dead-code and technical debt, and generates actionable reports.
