@@ -1,6 +1,67 @@
 from datetime import datetime
 
-def get_analysis_prompt(project_path: str, focus_areas: list[str] = None) -> str:
+# language-specific patterns to look for
+LANGUAGE_PATTERNS = {
+    "python": [
+        "Bare except clauses (except: without exception type)",
+        "Mutable default arguments (def func(items=[]))",
+        "print() statements that should use logging",
+        "String concatenation in loops (use join instead)",
+        "Using type() instead of isinstance()",
+    ],
+    "javascript": [
+        "console.log statements left in code",
+        "var instead of let/const",
+        "Callback hell (deeply nested callbacks)",
+        "== instead of === for comparison",
+        "Missing error handling in promises",
+    ],
+    "typescript": [
+        "Use of 'any' type",
+        "Missing return types on functions",
+        "Non-null assertions (!) overuse",
+    ],
+    "java": [
+        "Empty catch blocks",
+        "Raw types instead of generics",
+        "Public fields that should be private",
+    ],
+}
+
+# generate language-specific hints
+def get_language_hints(extensions: list[str]) -> str:
+    # map extensions to languages
+    ext_to_lang = {
+        ".py": "python",
+        ".js": "javascript",
+        ".jsx": "javascript",
+        ".ts": "typescript",
+        ".tsx": "typescript",
+        ".java": "java",
+    }
+    
+    # find which languages are in the project
+    languages = set()
+    for ext in extensions:
+        if ext in ext_to_lang:
+            languages.add(ext_to_lang[ext])
+    
+    if not languages:
+        return ""
+    
+    # build the hints section
+    hints = "\n**LANGUAGE-SPECIFIC ISSUES TO CHECK:**\n"
+    
+    for lang in languages:
+        if lang in LANGUAGE_PATTERNS:
+            hints += f"\n*{lang.title()}:*\n"
+            for pattern in LANGUAGE_PATTERNS[lang]:
+                hints += f"   - {pattern}\n"
+    
+    return hints
+
+# generate the analysis prompt
+def get_analysis_prompt(project_path: str, focus_areas: list[str] = None, extensions: list[str] = None) -> str:
     """
     Generate the analysis prompt for CodeScope.
     
@@ -14,12 +75,17 @@ def get_analysis_prompt(project_path: str, focus_areas: list[str] = None) -> str
 **FOCUS AREAS:** Pay special attention to:
 {chr(10).join(f'- {area}' for area in focus_areas)}
 """
+    # Generate language-specific hints based on detected file types
+    language_hints = ""
+    if extensions:
+        language_hints = get_language_hints(extensions)
     
     return f'''Analyze the codebase at the current directory for technical debt and code quality issues.
 
 **DATE:** {datetime.now().strftime("%Y-%m-%d")}
 **PROJECT:** {project_path}
 {focus_section}
+
 
 ** EXECUTION RULES:**
 - Execute ALL tools silently (no intermediate text responses)
@@ -46,6 +112,7 @@ def get_analysis_prompt(project_path: str, focus_areas: list[str] = None) -> str
    - Overly complex functions
    - Inconsistent naming conventions
    - Missing docstrings
+{language_hints}
 
 **ANALYSIS STEPS:**
 
@@ -83,12 +150,19 @@ After your analysis, create a Markdown report file with this structure:
 
 [List each with file:line and explanation]
 
+{'''
+## Language-Specific Issues
+
+[List any language-specific problems found]
+''' if language_hints else ""}
+
 ## Statistics
 
 - Unused imports: [count]
 - TODO/FIXME comments: [count]
 - Commented code blocks: [count]
 - Potential dead code: [count]
+- Language-specific issues: [count]
 
 ## Top Recommendations
 

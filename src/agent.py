@@ -3,9 +3,8 @@ import aisuite as ai
 from aisuite.mcp import MCPClient
 from pathlib import Path
 
-from .config import AVAILABLE_MODELS, DEFAULT_MODEL, MAX_TURNS
+from .config import AVAILABLE_MODELS, DEFAULT_MODEL, MAX_TURNS, SUPPORTED_EXTENSIONS
 from .prompts import get_analysis_prompt
-
 
 class CodeScopeAgent:
     def __init__(self, model_key: str = DEFAULT_MODEL, verbose: bool = True):
@@ -28,6 +27,24 @@ class CodeScopeAgent:
         # print message if verbose mode is on
         if self.verbose:
             print(message)
+
+    # scan codebase for file extensions    
+    def _scan_extensions(self, codebase_path: str) -> list[str]:
+        extensions = set()
+        
+        for file in Path(codebase_path).rglob("*"):
+            # skip hidden files/folders and common non-code dir
+            if any(part.startswith('.') for part in file.parts):
+                continue
+            if any(skip in file.parts for skip in ['node_modules', 'venv', '__pycache__', 'dist', 'build']):
+                continue
+                
+            if file.is_file() and file.suffix:
+                ext = file.suffix.lower()
+                if ext in SUPPORTED_EXTENSIONS:
+                    extensions.add(ext)
+        
+        return list(extensions)
     
     def analyze( self, codebase_path: str, focus_areas: list[str] = None,) -> dict:
         # resolve to absolute path
@@ -36,6 +53,11 @@ class CodeScopeAgent:
         self._log(f"\n{'='*60}")
         self._log(f"Analyzing: {codebase_path}")
         self._log(f"{'='*60}\n")
+
+        # scan for file extensions to customize the prompt
+        self._log("Scanning project structure...")
+        extensions = self._scan_extensions(codebase_path)
+        self._log(f"   Found file types: {', '.join(sorted(extensions)) or 'none detected'}")
         
         # initialize MCP filesystem client: gives agent read/write access to target dir
         self._log("Initializing filesystem tools...")
@@ -48,8 +70,12 @@ class CodeScopeAgent:
         tools = self.mcp_client.get_callable_tools()
         self._log(f"✓ {len(tools)} filesystem tools available")
         
-        # generate the analysis prompt
-        prompt = get_analysis_prompt(codebase_path, focus_areas)
+        # Generate the analysis prompt with language-specific hints
+        prompt = get_analysis_prompt(
+            codebase_path, 
+            focus_areas=focus_areas,
+            extensions=extensions
+        )
         
         # run the agent
         self._log(f"\n Starting analysis (max {MAX_TURNS} turns)...\n")
