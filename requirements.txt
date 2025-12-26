@@ -1,0 +1,13 @@
+cat > requirements.txt << 'EOF'
+# install aisuite from GitHub
+git+https://github.com/andrewyng/aisuite.git
+
+# LLM Providers (install the ones you need)
+anthropic
+openai
+google-generativeai
+
+# other dependencies
+python-dotenv
+pathspec
+EOF
