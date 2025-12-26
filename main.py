@@ -10,7 +10,9 @@ from src.report import save_report
 
 
 def print_banner():
+    print("\n" + "=" * 60)
     print("\n CodeScope v0.1.0\n")
+    print("= " * 60 + "\n")
 
 
 def main():

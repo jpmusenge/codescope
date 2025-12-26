@@ -12,7 +12,7 @@ AVAILABLE_MODELS = {
     "gemini": "google:gemini-2.0-flash",
 }
 
-DEFAULT_MODEL = "claude"
+DEFAULT_MODEL = "gpt4-mini"
 # agent configuration
 # how many tool-use turns the agent can take
 MAX_TURNS = 25
